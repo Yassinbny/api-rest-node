@@ -33,17 +33,23 @@ const createArticle = async (req, res) => {
 
 const getArticles = async (req, res) => {
   try {
-    let consult = await Article.find({}).sort({ date: -1 }).exec();
+    let consult = Article.find({}).sort({ date: -1 });
 
+    if (req.params?.last) {
+      consult = consult.limit(parseInt(req.params.last));
+    }
+    consult = await consult.exec();
     if (!consult || consult.length === 0) {
       return res
         .status(404)
         .json({ message: "No articles found", status: "error" });
     }
 
-    return res
-      .status(200)
-      .json({ message: "getArticles is ok", data: consult });
+    return res.status(200).json({
+      message: "getArticles is ok",
+      url_parameter: req.params?.last,
+      data: consult,
+    });
   } catch (error) {
     return res
       .status(400)
@@ -51,4 +57,80 @@ const getArticles = async (req, res) => {
   }
 };
 
-export { createArticle, getArticles };
+const getOneArticle = async (req, res) => {
+  try {
+    const articleId = req.params.id;
+    const article = await Article.findById(articleId);
+
+    if (!article) {
+      return res
+        .status(404)
+        .json({ message: "Article not found", status: "error" });
+    }
+    return res.status(200).json({
+      message: "getOneArticle is ok",
+      data: article,
+    });
+  } catch (error) {
+    return res
+      .status(400)
+      .json({ message: "Error fetching article", status: "error", error });
+  }
+};
+
+const deleteArticle = async (req, res) => {
+  try {
+    const articleId = req.params.id;
+    const articleDeleted = await Article.findByIdAndDelete(articleId);
+
+    if (!articleDeleted) {
+      return res
+        .status(404)
+        .json({ message: "Article not found", status: "error" });
+    }
+
+    return res.status(200).json({
+      message: "Article deleted successfully",
+      data: articleDeleted,
+    });
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: "Error deleting article", status: "error", error });
+  }
+};
+
+const updateArticle = async (req, res) => {
+  try {
+    const articleId = req.params.id;
+    const updateData = req.body;
+    const articleUpdated = await Article.findByIdAndUpdate(
+      articleId,
+      updateData,
+      { new: true },
+    );
+
+    if (!articleUpdated) {
+      return res
+        .status(404)
+        .json({ message: "Article not found", status: "error" });
+    }
+
+    return res.status(200).json({
+      message: "Article updated successfully",
+      data: articleUpdated,
+    });
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: "Error updating article", status: "error", error });
+  }
+};
+
+export {
+  createArticle,
+  getArticles,
+  getOneArticle,
+  deleteArticle,
+  updateArticle,
+};
