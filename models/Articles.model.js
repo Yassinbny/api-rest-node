@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 
 const ArticleSchema = Schema({
-  title: { type: String, required: true },
+  title: { type: String, required: true, minlength: 5 },
   content: { type: String, required: true },
   date: { type: Date, default: Date.now },
   image: {

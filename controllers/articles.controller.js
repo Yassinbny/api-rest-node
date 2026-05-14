@@ -1,18 +1,20 @@
-import validator from "validator";
 import { Article } from "../models/Articles.model.js";
-
+import { validateArticle } from "../helpers/validate.js";
+import fs, { access } from "fs";
+import path from "path";
 const createArticle = async (req, res) => {
   // take the data from the request body
   const { title, content } = req.body;
 
   // validate the data
   try {
-    let validate_title =
-      !validator.isEmpty(title) &&
-      validator.isLength(title, { min: 5, max: 25 });
-    let validate_content = !validator.isEmpty(content);
-    if (!validate_title || !validate_content) {
-      throw new Error("Validation failed: title and content are required");
+    const validatedData = validateArticle({ title, content });
+    if (!validatedData) {
+      return res.status(400).json({
+        message: "Validation error",
+        status: "error",
+        error: "Invalid article data",
+      });
     }
 
     // create the article to save
@@ -107,7 +109,7 @@ const updateArticle = async (req, res) => {
     const articleUpdated = await Article.findByIdAndUpdate(
       articleId,
       updateData,
-      { new: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!articleUpdated) {
@@ -127,10 +129,74 @@ const updateArticle = async (req, res) => {
   }
 };
 
+const uploadImage = async (req, res) => {
+  try {
+    console.log(req.file);
+
+    if (!req.file && !req.files) {
+      return res
+        .status(400)
+        .json({ message: "No file uploaded", status: "error" });
+    }
+
+    // extension of the file
+    let fileExtension = req.file.originalname.split(".").pop();
+    // check extension
+    if (!["jpg", "jpeg", "png", "gif"].includes(fileExtension.toLowerCase())) {
+      await fs.promises.unlink(req.file.path);
+      return res
+        .status(400)
+        .json({ message: "Invalid file type", status: "error" });
+    }
+
+    // update the article with the image name
+
+    let articleId = req.params.id;
+    const articleUpdated = await Article.findByIdAndUpdate(
+      articleId,
+      { image: req.file.filename },
+      { returnDocument: "after", runValidators: true },
+    );
+
+    if (!articleUpdated) {
+      await fs.promises.unlink(req.file.path);
+      return res
+        .status(404)
+        .json({ message: "Article not found", status: "error" });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "Image uploaded successfully", file: req.file });
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: "Error uploading image", status: "error", error });
+  }
+};
+
+const getImageFile = async (req, res) => {
+  try {
+    let fileName = req.params.file;
+
+    let path_file = "./images/articles/" + fileName;
+
+    await fs.promises.access(path_file);
+
+    return res.sendFile(path.resolve(path_file));
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: "Error fetching image", status: "error", error });
+  }
+};
+
 export {
   createArticle,
   getArticles,
   getOneArticle,
   deleteArticle,
   updateArticle,
+  uploadImage,
+  getImageFile,
 };
