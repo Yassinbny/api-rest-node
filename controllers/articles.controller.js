@@ -191,6 +191,28 @@ const getImageFile = async (req, res) => {
   }
 };
 
+const searchArticle = async (req, res) => {
+  try {
+    let query = req.params.query;
+    const foundedArticles = await Article.find({
+      $or: [
+        { title: { $regex: query, $options: "i" } },
+        { content: { $regex: query, $options: "i" } },
+      ],
+    })
+      .sort({ date: -1 })
+      .exec();
+    return res.status(200).json({
+      message: "Articles found",
+      data: foundedArticles,
+    });
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: "Error searching articles", status: "error", error });
+  }
+};
+
 export {
   createArticle,
   getArticles,
@@ -199,4 +221,5 @@ export {
   updateArticle,
   uploadImage,
   getImageFile,
+  searchArticle,
 };

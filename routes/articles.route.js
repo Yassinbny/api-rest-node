@@ -8,6 +8,7 @@ import {
   updateArticle,
   uploadImage,
   getImageFile,
+  searchArticle,
 } from "../controllers/articles.controller.js";
 const router = express.Router();
 
@@ -27,6 +28,8 @@ router.get("/articles{/:last}", getArticles);
 router.get("/article/:id", getOneArticle);
 
 router.get("/image/:file", getImageFile);
+
+router.get("/search/:query", searchArticle);
 
 router.post("/create", createArticle);
 
